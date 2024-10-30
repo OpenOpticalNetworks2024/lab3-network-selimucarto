@@ -51,31 +51,44 @@ class Signal_information(object):
 
 
 class Node(object):
-    def __init__(self):
-        pass
+    def __init__(self, data: dict):
+        self.label = data.get('label', '')
+        self.position = data.get('position', (0.0, 0.0))
+        self.connected_nodes = data.get('connected_nodes', [])
+        self.successive = {}
 
     @property
-    def label(self):
-        pass
+    def get_label(self) -> str:
+        return self.label
 
     @property
-    def position(self):
-        pass
+    def get_position(self) -> tuple:
+        return self.position
 
     @property
-    def connected_nodes(self):
-        pass
+    def get_connected_nodes(self) -> list[str]:
+        return self.connected_nodes
 
     @property
-    def successive(self):
-        pass
+    def get_successive(self) -> dict:
+        return self.successive
 
     @successive.setter
-    def successive(self):
-        pass
+    def set_successive(self, successive: dict):
+        self.successive = successive
 
-    def propagate(self):
-        pass
+    def propagate(self, signal: 'SignalInformation'):
+        if signal.get_path() and signal.get_path()[0] == self.label:
+            # Update the path by removing the current node
+            signal.update_path()
+
+            # Check if there's another node in the path
+            if signal.get_path():
+                next_node_label = signal.get_path()[0]
+                # Call propagate on the next node if it exists in successive
+                next_node = self.successive.get(next_node_label)
+                if next_node:
+                    next_node.propagate(signal)
 
 
 class Line(object):
