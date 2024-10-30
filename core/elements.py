@@ -13,40 +13,41 @@ class Signal_information(object):
         return self._signal_power
 
     def update_signal_power(self, increment: float):
+        self._signal_power += increment
+
+    @property
+    def get_noise_power(self) -> float:
         return self._noise_power
 
-    @property
-    def noise_power(self):
-        pass
-
     @noise_power.setter
-    def noise_power(self):
-        pass
+    def set_noise_power(self, noise_power: float):
+        self._noise_power = noise_power
 
-    def update_noise_power(self):
-        pass
+    def update_noise_power(self, increment: float):
+        self._noise_power += increment
 
     @property
-    def latency(self):
-        pass
+    def get_latency(self):
+        return self._latency
 
     @latency.setter
-    def latency(self):
-        pass
+    def set_latency(self, latency: float):
+        self._latency = latency
 
-    def update_latency(self):
-        pass
+    def update_latency(self, increment: float):
+        
 
     @property
-    def path(self):
-        pass
+    def get_path(self) -> list[str]:
+        return self._path
 
     @path.setter
-    def path(self):
-        pass
+    def set_path(self, path: list[str]):
+        self._path = path
 
-    def update_path(self):
-        pass
+    def update_path(self, increment: float):
+        if self._path:
+            self._path.pop(0)
 
 
 class Node(object):
