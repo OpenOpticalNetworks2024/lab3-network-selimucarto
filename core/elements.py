@@ -145,7 +145,7 @@ class Network:
     def load_network(self, json_file: str):
         # Load nodes from the JSON file and create Node and Line objects
         with open(json_file, 'r') as file:
-            data = json.load(file)
+            data = json.load(nodes.json)
             for label, info in data.items():
                 node = Node(label, tuple(info['position']), info['connected_nodes'])
                 self.nodes[label] = node
