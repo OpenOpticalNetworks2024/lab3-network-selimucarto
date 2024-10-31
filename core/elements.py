@@ -92,33 +92,48 @@ class Node(object):
 
 
 class Line(object):
-    def __init__(self):
-        pass
+    SPEED_OF_LIGHT = 3e8  
+    FIBER_SPEED = SPEED_OF_LIGHT * 2 / 3 
+    
+    def __init__(self, label: str, length: float):
+        self.label = label
+        self.length = length
+        self.successive = {}
 
     @property
-    def label(self):
-        pass
+    def get_label(self) -> str:
+        return self.label
 
     @property
-    def length(self):
-        pass
+    def get_length(self) -> float:
+        return self.length
 
     @property
-    def successive(self):
-        pass
+    def get_successive(self) -> dict:
+        return self.successive
 
     @successive.setter
-    def successive(self):
-        pass
+    def set_successive(self, successive: dict):
+        self.successive = successive
 
-    def latency_generation(self):
-        pass
+    def latency_generation(self) -> float:
+        return self.length / self.FIBER_SPEED
 
-    def noise_generation(self):
-        pass
+    def noise_generation(self, signal_power: float) -> float:
+        return 1e-9 * signal_power * self.length
 
-    def propagate(self):
-        pass
+    def propagate(self, signal: 'SignalInformation'):
+        latency = self.latency_generation()
+        signal.update_latency(latency)
+
+        noise = self.noise_generation(signal.get_signal_power())
+        signal.update_noise_power(noise)
+
+        if signal.get_path():
+            next_node_label = signal.get_path()[0]
+            next_node = self.successive.get(next_node_label)
+            if next_node:
+                next_node.propagate(signal)
 
 
 class Network(object):
