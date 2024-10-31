@@ -136,32 +136,89 @@ class Line(object):
                 next_node.propagate(signal)
 
 
-class Network(object):
-    def __init__(self):
-        pass
+class Network:
+    def __init__(self, json_file: str):
+        self.nodes = {}
+        self.lines = {}
+        self.load_network(json_file)
 
-    @property
-    def nodes(self):
-        pass
+    def load_network(self, json_file: str):
+        # Load nodes from the JSON file and create Node and Line objects
+        with open(json_file, 'r') as file:
+            data = json.load(file)
+            for label, info in data.items():
+                node = Node(label, tuple(info['position']), info['connected_nodes'])
+                self.nodes[label] = node
 
-    @property
-    def lines(self):
-        pass
+            # Create lines based on connected nodes
+            for label, node in self.nodes.items():
+                for connected_label in node.connected_nodes:
+                    if label + connected_label not in self.lines:
+                        position1 = self.nodes[label].position
+                        position2 = self.nodes[connected_label].position
+                        length = math.dist(position1, position2)
+                        line = Line(label + connected_label, length)
+                        self.lines[label + connected_label] = line
+
+    def connect(self):
+        # Link nodes to their respective lines and lines to nodes
+        for label, node in self.nodes.items():
+            node.successive = {neighbor: self.lines[label + neighbor] for neighbor in node.connected_nodes if label + neighbor in self.lines}
+        
+        for line_label, line in self.lines.items():
+            # Set the successive node for each line
+            start_node = line_label[0]
+            end_node = line_label[1]
+            line.successive[end_node] = self.nodes[end_node]
+
+    def find_paths(self, start: str, end: str, path=None):
+        # Recursively find all paths from start to end
+        if path is None:
+            path = [start]
+        if start == end:
+            return [path]
+        
+        paths = []
+        for node in self.nodes[start].connected_nodes:
+            if node not in path:
+                new_paths = self.find_paths(node, end, path + [node])
+                for new_path in new_paths:
+                    paths.append(new_path)
+        return paths
+
+    def propagate(self, signal_info: SignalInformation) -> SignalInformation:
+        # Begin propagation based on the path defined in signal_info
+        start_node_label = signal_info.path[0]
+        if start_node_label in self.nodes:
+            self.nodes[start_node_label].propagate(signal_info)
+        return signal_info
 
     def draw(self):
-        pass
+        # Visualize the network using matplotlib
+        for label, node in self.nodes.items():
+            plt.plot(*node.position, 'o', label=label)
+            for connected_label in node.connected_nodes:
+                pos1 = node.position
+                pos2 = self.nodes[connected_label].position
+                plt.plot([pos1[0], pos2[0]], [pos1[1], pos2[1]], 'k-')
+        plt.legend()
+        plt.show()
 
-    # find_paths: given two node labels, returns all paths that connect the 2 nodes
-    # as a list of node labels. Admissible path only if cross any node at most once
-    def find_paths(self, label1, label2):
-        pass
-
-    # connect function set the successive attributes of all NEs as dicts
-    # each node must have dict of lines and viceversa
-    def connect(self):
-        pass
-
-    # propagate signal_information through path specified in it
-    # and returns the modified spectral information
-    def propagate(self, signal_information):
-        pass
+    def create_dataframe(self, signal_power: float) -> pd.DataFrame:
+        # Create a DataFrame with all paths, latency, noise, and SNR
+        data = []
+        for start in self.nodes:
+            for end in self.nodes:
+                if start != end:
+                    paths = self.find_paths(start, end)
+                    for path in paths:
+                        signal_info = SignalInformation(signal_power, path[:])  # Copy path for fresh propagation
+                        propagated_signal = self.propagate(signal_info)
+                        snr = 10 * math.log10(propagated_signal.signal_power / propagated_signal.noise_power)
+                        data.append({
+                            'Path': '->'.join(path),
+                            'Latency': propagated_signal.latency,
+                            'Noise': propagated_signal.noise_power,
+                            'SNR (dB)': snr
+                        })
+        return pd.DataFrame(data)
