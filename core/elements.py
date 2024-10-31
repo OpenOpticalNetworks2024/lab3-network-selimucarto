@@ -1,4 +1,8 @@
 import json
+import math
+import pandas as pd
+import matplotlib.pyplot as plt
+
 
 class Signal_information(object):
     def __init__(self, signal_power: float, path: list[str]):
@@ -136,32 +140,36 @@ class Line(object):
                 next_node.propagate(signal)
 
 
+
+
 class Network:
     def __init__(self, json_file: str):
-        self.nodes = {}
-        self.lines = {}
-        self.load_network(json_file)
+        self.nodes = {}  # Dictionary of nodes
+        self.lines = {}  # Dictionary of lines
+        self.load_network(json_file)  # Load nodes and lines from JSON file
 
     def load_network(self, json_file: str):
         # Load nodes from the JSON file and create Node and Line objects
         with open(json_file, 'r') as file:
-            data = json.load(nodes.json)
+            data = json.load(file)
             for label, info in data.items():
                 node = Node(label, tuple(info['position']), info['connected_nodes'])
                 self.nodes[label] = node
 
-            # Create lines based on connected nodes
+            # Create bidirectional lines based on connected nodes
             for label, node in self.nodes.items():
                 for connected_label in node.connected_nodes:
                     if label + connected_label not in self.lines:
                         position1 = self.nodes[label].position
                         position2 = self.nodes[connected_label].position
                         length = math.dist(position1, position2)
-                        line = Line(label + connected_label, length)
-                        self.lines[label + connected_label] = line
+                        line_ab = Line(label + connected_label, length)
+                        line_ba = Line(connected_label + label, length)
+                        self.lines[label + connected_label] = line_ab
+                        self.lines[connected_label + label] = line_ba
 
     def connect(self):
-        # Link nodes to their respective lines and lines to nodes
+        # Set up successive dictionaries for nodes and lines
         for label, node in self.nodes.items():
             node.successive = {neighbor: self.lines[label + neighbor] for neighbor in node.connected_nodes if label + neighbor in self.lines}
         
@@ -172,7 +180,7 @@ class Network:
             line.successive[end_node] = self.nodes[end_node]
 
     def find_paths(self, start: str, end: str, path=None):
-        # Recursively find all paths from start to end
+        # Recursively find all paths from start to end, without revisiting nodes
         if path is None:
             path = [start]
         if start == end:
@@ -204,7 +212,7 @@ class Network:
         plt.legend()
         plt.show()
 
-    def create_dataframe(self, signal_power: float) -> pd.DataFrame:
+    def create_dataframe(self, signal_power: float = 0.001) -> pd.DataFrame:
         # Create a DataFrame with all paths, latency, noise, and SNR
         data = []
         for start in self.nodes:
@@ -214,11 +222,15 @@ class Network:
                     for path in paths:
                         signal_info = SignalInformation(signal_power, path[:])  # Copy path for fresh propagation
                         propagated_signal = self.propagate(signal_info)
-                        snr = 10 * math.log10(propagated_signal.signal_power / propagated_signal.noise_power)
+                        if propagated_signal.noise_power > 0:
+                            snr_db = 10 * math.log10(propagated_signal.signal_power / propagated_signal.noise_power)
+                        else:
+                            snr_db = float('inf')  # Infinity if noise is zero
                         data.append({
                             'Path': '->'.join(path),
-                            'Latency': propagated_signal.latency,
-                            'Noise': propagated_signal.noise_power,
-                            'SNR (dB)': snr
+                            'Latency (s)': propagated_signal.latency,
+                            'Noise Power (W)': propagated_signal.noise_power,
+                            'SNR (dB)': snr_db
                         })
-        return pd.DataFrame(data)
+        return pd.DataFrame(data, columns=['Path', 'Latency (s)', 'Noise Power (W)', 'SNR (dB)'])
+
