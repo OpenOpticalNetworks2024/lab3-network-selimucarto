@@ -9,7 +9,6 @@ import pandas as pd
 from pathlib import Path
 from core.elements import Network, signal_information
 
-
 # Define paths
 ROOT = Path(__file__).resolve().parent.parent
 INPUT_FOLDER = ROOT / 'resources'
