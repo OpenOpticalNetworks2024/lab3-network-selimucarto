@@ -1,10 +1,20 @@
+
 import json
+import math
+import sys
+
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from pathlib import Path
+from core.elements import Network, signal_information
 
-# Exercise Lab3: Network
+
+# Define paths
+ROOT = Path(__file__).resolve().parent.parent
+INPUT_FOLDER = ROOT / 'resources'
+file_input = INPUT_FOLDER / 'resources/nodes.json'  # Full path to the JSON file
+SIGNAL_POWER_W = 1e-3  # Signal power in watts (1 mW)
 
 def main():
     # Load the network data from a JSON file (assume 'nodes.json' contains the network structure)
