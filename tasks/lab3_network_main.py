@@ -57,7 +57,7 @@ def main():
     df = pd.DataFrame(data)
 
     # Save the DataFrame to a CSV file
-    df.to_csv("network_weighted_paths.csv", index=False)
+    df.to_csv("weighted_paths.csv", index=False)
 
     # Optionally, print the DataFrame to inspect the data
     print(df)
